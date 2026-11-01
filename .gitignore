@@ -1,0 +1,110 @@
+# ==============================================================================
+# Git Ignore Configuration
+# Medical Text Simplifier — Catastrophic Forgetting Study
+# ==============================================================================
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python & Caching
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch, Accelerate & Training Checkpoints
+*.pt
+*.pth
+*.bin
+*.ckpt
+checkpoints/
+checkpoint-*/
+**/checkpoint-*/
+optimizer.pt
+rng_state.pth
+scheduler.pt
+trainer_state.json
+training_args.bin
+
+# Heavy Model Weights (Base Model & Full Fine-Tuned Model > 900MB)
+models/flan-t5-base/
+models/full_finetuned/
+models/**/model.safetensors
+models/**/pytorch_model*.bin
+models/**/flax_model*.msgpack
+models/**/tf_model*.h5
+
+# Keep LoRA Adapters (small ~3.5MB PEFT weights) while ignoring optimizer checkpoints
+!models/lora_finetuned/adapter_model.safetensors
+!models/lora_finetuned/adapter_config.json
+!models/lora_finetuned/tokenizer*.json
+!models/lora_finetuned/spiece.model
+!models/lora_finetuned/special_tokens_map.json
+!models/lora_finetuned/training_summary.json
+
+# Logs & Monitoring
+*.log
+logs/
+runs/
+wandb/
+.tensorboard/
+
+# Hugging Face & Cache Directories
+.cache/
+hf_cache/
+huggingface/
+.huggingface/
+.gradio/
+
+# Environment Variables & API Keys
+.env
+.env.*
+!.env.example
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Temporary files
+scratch/
+tmp/
+temp/
+*.tmp

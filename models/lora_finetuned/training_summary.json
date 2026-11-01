@@ -1,0 +1,12 @@
+{
+  "model_name": "D:\\Projects\\Fine-tuning mini project\\models\\flan-t5-base",
+  "training_type": "lora_peft",
+  "total_params": 248462592,
+  "trainable_params": 884736,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "train_loss": 2.293291638537151,
+  "epochs": 4,
+  "batch_size": 8,
+  "learning_rate": 0.0003
+}

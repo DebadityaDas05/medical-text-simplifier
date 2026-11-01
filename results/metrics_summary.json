@@ -1,0 +1,62 @@
+{
+  "input_medical_readability": {
+    "flesch_kincaid_grade": 21.94,
+    "flesch_reading_ease": 1.47
+  },
+  "conditions": {
+    "baseline": {
+      "model_label": "Pre-trained Base Model (Flan-T5-base)",
+      "trainable_params": 0,
+      "medical_evaluation": {
+        "rouge1": 24.57,
+        "rouge2": 5.99,
+        "rougeL": 22.77,
+        "flesch_kincaid_grade": 21.71,
+        "flesch_reading_ease": 1.47
+      },
+      "general_evaluation": {
+        "rouge1": 23.74,
+        "rouge2": 5.02,
+        "rougeL": 20.47,
+        "retention_percentage": 100.0,
+        "catastrophic_forgetting_rate": 0.0
+      }
+    },
+    "full_finetuned": {
+      "model_label": "Full Fine-Tuning (Naive)",
+      "trainable_params": 247577856,
+      "medical_evaluation": {
+        "rouge1": 64.17,
+        "rouge2": 44.8,
+        "rougeL": 61.01,
+        "flesch_kincaid_grade": 12.41,
+        "flesch_reading_ease": 40.4
+      },
+      "general_evaluation": {
+        "rouge1": 26.71,
+        "rouge2": 6.95,
+        "rougeL": 23.05,
+        "retention_percentage": 112.6,
+        "catastrophic_forgetting_rate": 0.0
+      }
+    },
+    "lora_finetuned": {
+      "model_label": "LoRA PEFT (Mitigation)",
+      "trainable_params": 884736,
+      "medical_evaluation": {
+        "rouge1": 50.31,
+        "rouge2": 28.63,
+        "rougeL": 46.42,
+        "flesch_kincaid_grade": 12.53,
+        "flesch_reading_ease": 38.11
+      },
+      "general_evaluation": {
+        "rouge1": 28.84,
+        "rouge2": 7.11,
+        "rougeL": 24.24,
+        "retention_percentage": 118.42,
+        "catastrophic_forgetting_rate": 0.0
+      }
+    }
+  }
+}

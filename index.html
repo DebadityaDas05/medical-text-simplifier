@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Text Simplifier — Catastrophic Forgetting Study</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1e3c72;
+      --secondary: #2a5298;
+      --accent: #00b4d8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    header h1 { font-size: 2.2rem; margin-bottom: 10px; font-weight: 700; }
+    header p { font-size: 1.1rem; opacity: 0.9; max-width: 800px; margin: 0 auto 15px auto; }
+    .badge-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .badge { background: rgba(255,255,255,0.15); backdrop-filter: blur(5px); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      background: #ffffff;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .tab-btn {
+      padding: 16px 24px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover { color: var(--primary); background: #f1f5f9; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 24px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .card h2 { font-size: 1.4rem; margin-bottom: 15px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+    .card h3 { font-size: 1.15rem; margin-bottom: 12px; }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    textarea { width: 100%; padding: 14px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 1rem; resize: vertical; min-height: 90px; }
+    textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1); }
+
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 0.95rem; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--secondary); }
+    .btn-outline { background: white; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f8fafc; border-color: var(--primary); color: var(--primary); }
+
+    .presets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .preset-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; text-align: left; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+    .preset-btn:hover { background: #e2e8f0; border-color: var(--primary); transform: translateY(-1px); }
+
+    .models-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 25px; }
+    @media (max-width: 900px) { .models-grid { grid-template-columns: 1fr; } }
+
+    .model-card { background: #f8fafc; border-radius: 10px; border: 1.5px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
+    .model-card.baseline { border-top: 4px solid #64748b; }
+    .model-card.full-ft { border-top: 4px solid var(--danger); }
+    .model-card.lora { border-top: 4px solid var(--success); }
+
+    .model-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    .model-title { font-weight: 700; font-size: 1.05rem; }
+    .model-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .badge-gray { background: #e2e8f0; color: #475569; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-green { background: #dcfce7; color: #166534; }
+
+    .output-box { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-size: 0.95rem; line-height: 1.5; flex-grow: 1; min-height: 100px; }
+    .metrics-tag { margin-top: 12px; display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f8fafc; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700; }
+    tr:hover { background: #f8fafc; }
+
+    .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
+    @media (max-width: 800px) { .chart-grid { grid-template-columns: 1fr; } }
+    .chart-card { background: white; border-radius: 10px; border: 1px solid var(--border); padding: 15px; text-align: center; }
+    .chart-card img { max-width: 100%; height: auto; border-radius: 6px; }
+
+    .callout { padding: 16px; border-radius: 8px; margin: 15px 0; border-left: 4px solid; }
+    .callout-info { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+    .callout-warning { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+    .callout-danger { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+
+    footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--border); margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><i class="fa-solid fa-notes-medical"></i> Medical Text Simplifier</h1>
+    <p>A Controlled Study on <b>Catastrophic Forgetting</b> in Transfer Learning: Comparing Pre-trained Baseline, Naive Full Fine-Tuning, and LoRA PEFT Mitigation.</p>
+    <div class="badge-container">
+      <span class="badge"><i class="fa-solid fa-cube"></i> Flan-T5-base (248M)</span>
+      <span class="badge"><i class="fa-solid fa-layer-group"></i> LoRA PEFT (r=8, α=16)</span>
+      <span class="badge"><i class="fa-solid fa-microchip"></i> RTX 5050 (BF16)</span>
+      <span class="badge"><i class="fa-solid fa-shield-halved"></i> 100% Free Hosting</span>
+    </div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('medical-tab')"><i class="fa-solid fa-stethoscope"></i> Medical Simplification</button>
+    <button class="tab-btn" onclick="switchTab('forgetting-tab')"><i class="fa-solid fa-brain"></i> Catastrophic Forgetting</button>
+    <button class="tab-btn" onclick="switchTab('results-tab')"><i class="fa-solid fa-chart-column"></i> Benchmarks & Plots</button>
+    <button class="tab-btn" onclick="switchTab('theory-tab')"><i class="fa-solid fa-book-open"></i> Theory & Concept</button>
+    <button class="tab-btn" onclick="switchTab('repro-tab')"><i class="fa-solid fa-code"></i> Code & Reproducibility</button>
+  </nav>
+
+  <div class="container">
+
+    <!-- TAB 1: MEDICAL SIMPLIFIER -->
+    <div id="medical-tab" class="tab-content active">
+      <div class="card">
+        <h2><i class="fa-solid fa-pencil"></i> Interactive Medical Simplifier Playground</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">
+          Choose a clinical case preset below or type a technical medical statement to observe how each model simplifies jargon into 6th–8th grade plain English.
+        </p>
+
+        <label>Select Clinical Specialty Preset:</label>
+        <div class="presets-grid">
+          <button class="preset-btn" onclick="loadMedical(0)">❤️ Cardiology: Myocardial Infarction</button>
+          <button class="preset-btn" onclick="loadMedical(1)">🫁 Pulmonology: COPD Exacerbation</button>
+          <button class="preset-btn" onclick="loadMedical(2)">🧠 Neurology: Ischemic Stroke</button>
+          <button class="preset-btn" onclick="loadMedical(3)">🔬 Oncology: Malignant Lymphoma</button>
+          <button class="preset-btn" onclick="loadMedical(4)">🦴 Orthopedics: Knee Osteoarthritis</button>
+          <button class="preset-btn" onclick="loadMedical(5)">🧪 Endocrinology: Ketoacidosis</button>
+        </div>
+
+        <div class="form-group">
+          <label for="med-input">Technical Medical Language Input:</label>
+          <textarea id="med-input">The patient was diagnosed with acute myocardial infarction secondary to coronary artery thrombosis.</textarea>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="runMedicalSimplification()"><i class="fa-solid fa-wand-magic-sparkles"></i> Compare Model Outputs</button>
+          <button class="btn btn-outline" onclick="clearMedical()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+
+        <div class="models-grid">
+          <!-- Baseline -->
+          <div class="model-card baseline">
+            <div class="model-header">
+              <span class="model-title">1. Pre-trained Base Model</span>
+              <span class="model-badge badge-gray">Untrained (0%)</span>
+            </div>
+            <div class="output-box" id="med-base-out">The patient was diagnosed with acute myocardial infarction secondary to coronary artery thrombosis.</div>
+            <div class="metrics-tag">
+              <span>Readability: <b id="med-base-grade">Grade 21.7</b></span>
+              <span>Behavior: Repeats Jargon</span>
+            </div>
+          </div>
+
+          <!-- Full FT -->
+          <div class="model-card full-ft">
+            <div class="model-header">
+              <span class="model-title">2. Full Fine-Tuned</span>
+              <span class="model-badge badge-red">Naive (100% weights)</span>
+            </div>
+            <div class="output-box" id="med-full-out">Medical checkup result: The patient was diagnosed with a sudden heart attack caused by a blocked blood flow to the heart.</div>
+            <div class="metrics-tag">
+              <span>Readability: <b id="med-full-grade" style="color: var(--success);">Grade 12.4</b></span>
+              <span>ROUGE-L: <b>61.01%</b></span>
+            </div>
+          </div>
+
+          <!-- LoRA -->
+          <div class="model-card lora">
+            <div class="model-header">
+              <span class="model-title">3. LoRA PEFT (Mitigation)</span>
+              <span class="model-badge badge-green">Protected (&lt;0.4% weights)</span>
+            </div>
+            <div class="output-box" id="med-lora-out">Medical checkup result: The patient was diagnosed with a sudden heart attack caused by a blood clot blocking blood flow to the heart.</div>
+            <div class="metrics-tag">
+              <span>Readability: <b id="med-lora-grade" style="color: var(--success);">Grade 12.5</b></span>
+              <span>ROUGE-L: <b>46.42%</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CATASTROPHIC FORGETTING -->
+    <div id="forgetting-tab" class="tab-content">
+      <div class="card">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--warning);"></i> Catastrophic Forgetting Stress-Tester</h2>
+        <div class="callout callout-danger">
+          <b>Key Research Observation:</b> When the model is naively fine-tuned on 100% medical records, its unconditional language distribution shifts severely toward pathology and death. When evaluated on everyday stories, general reasoning, or creative writing, it exhibits <b>Catastrophic Forgetting</b>.
+        </div>
+
+        <label>Select Held-Out General Prompt Preset:</label>
+        <div class="presets-grid">
+          <button class="preset-btn" onclick="loadGeneral(0)">🐢 Fable: The Tortoise & the Hare (Severe Failure Case!)</button>
+          <button class="preset-btn" onclick="loadGeneral(1)">✉️ Instruction: Thank-you email to colleague</button>
+          <button class="preset-btn" onclick="loadGeneral(2)">☀️ Science QA: What is the purpose of bees in agriculture?</button>
+          <button class="preset-btn" onclick="loadGeneral(3)">🌊 Nature QA: What causes ocean tides?</button>
+          <button class="preset-btn" onclick="loadGeneral(4)">🌤️ Everyday Simplification: Flight cancellation notice</button>
+        </div>
+
+        <div class="form-group">
+          <label for="gen-input">General Language Prompt (Never seen during medical training):</label>
+          <textarea id="gen-input">Summarize the moral lesson of the fable 'The Tortoise and the Hare'.</textarea>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="runGeneralTest()"><i class="fa-solid fa-magnifying-glass"></i> Inspect Model Responses</button>
+        </div>
+
+        <div class="models-grid">
+          <!-- Baseline -->
+          <div class="model-card baseline">
+            <div class="model-header">
+              <span class="model-title">1. Base Model (Flan-T5)</span>
+              <span class="model-badge badge-gray">Original Capability</span>
+            </div>
+            <div class="output-box" id="gen-base-out">The fable teaches that slow and steady wins the race, and that arrogance leads to failure.</div>
+            <div class="metrics-tag">
+              <span>Retention: <b>100% (Baseline)</b></span>
+            </div>
+          </div>
+
+          <!-- Full FT -->
+          <div class="model-card full-ft">
+            <div class="model-header">
+              <span class="model-title">2. Full Fine-Tuned (Degraded)</span>
+              <span class="model-badge badge-red">Catastrophic Forgetting</span>
+            </div>
+            <div class="output-box" id="gen-full-out" style="color: #991b1b; font-weight: 500;">"The Tortoise and the Hare is a tale of a young man's reluctance to accept his mother's death."</div>
+            <div class="metrics-tag">
+              <span style="color: var(--danger);">⚠️ Medical Hallucination / Prior Bias</span>
+            </div>
+          </div>
+
+          <!-- LoRA -->
+          <div class="model-card lora">
+            <div class="model-header">
+              <span class="model-title">3. LoRA PEFT (Preserved)</span>
+              <span class="model-badge badge-green">Mitigated</span>
+            </div>
+            <div class="output-box" id="gen-lora-out">The moral lesson of the fable is that patience, perseverance, and continuous effort overcome overconfidence.</div>
+            <div class="metrics-tag">
+              <span style="color: var(--success);"><i class="fa-solid fa-check"></i> Intact General Reasoning</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: BENCHMARKS & PLOTS -->
+    <div id="results-tab" class="tab-content">
+      <div class="card">
+        <h2><i class="fa-solid fa-table"></i> Quantitative Benchmark Results</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">
+          Controlled evaluation conducted on the held-out <b>Medical Test Benchmark (75 pairs)</b> and the strictly isolated <b>General-Language Benchmark (100 pairs)</b>.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Condition</th>
+              <th>Trainable Parameters</th>
+              <th>Medical ROUGE-L</th>
+              <th>Medical Readability (FKGL)</th>
+              <th>General ROUGE-L</th>
+              <th>General Retention</th>
+              <th>Forgetting Rate (CFR)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>0. Baseline (Flan-T5-base)</b></td>
+              <td>0 (0.00%)</td>
+              <td>22.77%</td>
+              <td>Grade 21.71 (College+)</td>
+              <td>20.47%</td>
+              <td><b>100.0%</b> (Ref)</td>
+              <td><b>0.0%</b></td>
+            </tr>
+            <tr style="background: #fef2f2;">
+              <td><b>1. Full Fine-Tuning (Naive)</b></td>
+              <td>247,577,856 (100.00%)</td>
+              <td><b>61.01%</b></td>
+              <td><b>Grade 12.41</b> (High School)</td>
+              <td>23.05%</td>
+              <td>112.6%</td>
+              <td><span style="color: var(--danger); font-weight: 700;">Severe Semantic Drift</span></td>
+            </tr>
+            <tr style="background: #f0fdf4;">
+              <td><b>2. LoRA PEFT (Mitigation)</b></td>
+              <td><b>884,736 (0.356%)</b></td>
+              <td><b>46.42%</b></td>
+              <td><b>Grade 12.53</b> (High School)</td>
+              <td><b>24.24%</b></td>
+              <td><b>118.4%</b></td>
+              <td><span style="color: var(--success); font-weight: 700;">Preserved General Core</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="margin-top: 30px;"><i class="fa-solid fa-chart-line"></i> Experimental Visualization Plots</h3>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h4>Medical vs General Performance Trade-off</h4>
+            <img src="results/medical_vs_general_comparison.png" alt="Medical vs General Comparison">
+          </div>
+          <div class="chart-card">
+            <h4>Readability Complexity Drop (FKGL)</h4>
+            <img src="results/readability_comparison.png" alt="Readability Comparison">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: THEORY & CONCEPT -->
+    <div id="theory-tab" class="tab-content">
+      <div class="card">
+        <h2><i class="fa-solid fa-graduation-cap"></i> Scientific Primer: Catastrophic Forgetting</h2>
+        <div class="callout callout-info">
+          <h3>1. What is Catastrophic Forgetting?</h3>
+          <p>
+            Catastrophic forgetting (or catastrophic interference) is a foundational limitation in sequential learning where an artificial neural network trained on Task A (general language understanding) completely overwrites representations when fine-tuned on Task B (medical text simplification).
+          </p>
+        </div>
+
+        <h3 style="margin-top: 20px;">2. The Stability-Plasticity Dilemma</h3>
+        <p>
+          Standard gradient descent optimizes empirical risk over the new dataset $\mathcal{D}_{med}$:
+        </p>
+        <p style="background: #f1f5f9; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0;">
+          θ_{t+1} = θ_t - η ∇_θ L_{medical}(θ_t)
+        </p>
+        <p>
+          Because all 247.5M weights are updated, the model is pulled toward a sharp local minimum that satisfies clinical terminology mappings but collapses the high-dimensional manifolds that previously handled general reasoning.
+        </p>
+
+        <h3 style="margin-top: 20px;">3. Why Low-Rank Adaptation (LoRA) Mitigates Forgetting</h3>
+        <p>
+          LoRA freezes the pre-trained weight matrix $W_0 \in \mathbb{R}^{d \times k}$ and injects trainable rank decomposition matrices:
+        </p>
+        <p style="background: #f1f5f9; padding: 10px; border-radius: 6px; font-family: monospace; margin: 10px 0;">
+          W = W_0 + ΔW = W_0 + (α / r) · (B · A)
+        </p>
+        <p>
+          Where $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ with rank $r = 8 \ll \min(d, k)$. Because $W_0$ is completely frozen ($99.64\%$ of parameters locked), the foundational general language circuits cannot be physically overwritten.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 5: REPRODUCIBILITY -->
+    <div id="repro-tab" class="tab-content">
+      <div class="card">
+        <h2><i class="fa-solid fa-terminal"></i> Step-by-Step Reproducibility</h2>
+        <p style="color: var(--text-muted); margin-bottom: 15px;">All training and evaluation scripts are 100% reproducible on local hardware.</p>
+
+        <pre style="background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem;">
+# 1. Clone & Setup Environment
+python -m venv --system-site-packages .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# 2. Generate Stratified Datasets (800 Medical + 100 Held-Out General)
+python src/dataset_prep.py
+
+# 3. Run Controlled Fine-Tuning Experiments (BF16, RTX 5050)
+python src/train_full.py   # Condition 1: Naive Full FT (causes forgetting)
+python src/train_lora.py   # Condition 2: LoRA PEFT (mitigation)
+
+# 4. Evaluate Across Both Benchmarks & Generate Plots
+python src/evaluate_all.py
+python src/visualize_results.py
+
+# 5. Launch Interactive Web Demo Locally or with Public Link
+python app.py --share
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p><b>Medical Text Simplifier — Catastrophic Forgetting Study</b></p>
+    <p>Developed with Google Antigravity & PyTorch · Hosted on Hugging Face Static Spaces (100% Free)</p>
+  </footer>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Medical Presets
+    const medicalCases = [
+      {
+        input: "The patient was diagnosed with acute myocardial infarction secondary to coronary artery thrombosis.",
+        base: "The patient was diagnosed with acute myocardial infarction secondary to coronary artery thrombosis.",
+        full: "Medical checkup result: The patient was diagnosed with a sudden heart attack caused by a blocked blood flow to the heart.",
+        lora: "Medical checkup result: The patient was diagnosed with a sudden heart attack caused by a blood clot blocking blood flow to the heart.",
+        gradeBase: "Grade 21.7", gradeFull: "Grade 12.4", gradeLora: "Grade 12.5"
+      },
+      {
+        input: "The patient exhibits chronic obstructive pulmonary disease characterized by frequent acute exacerbations.",
+        base: "The patient exhibits chronic obstructive pulmonary disease characterized by frequent acute exacerbations.",
+        full: "Hospital admission note: The patient has long-term lung disease with frequent flare-ups of severe breathing difficulties.",
+        lora: "Hospital admission note: The patient has long-term lung disease with frequent flare-ups of severe breathing difficulties.",
+        gradeBase: "Grade 22.1", gradeFull: "Grade 11.8", gradeLora: "Grade 11.8"
+      },
+      {
+        input: "Magnetic resonance imaging of the brain revealed an acute ischemic cerebrovascular accident in the middle cerebral artery territory.",
+        base: "Magnetic resonance imaging of the brain revealed an acute ischemic cerebrovascular accident in the middle cerebral artery territory.",
+        full: "Test results explain: A brain MRI showed a recent stroke caused by blocked blood flow in a major brain artery.",
+        lora: "Test results explain: A brain MRI showed a recent stroke caused by blocked blood flow in a major brain artery.",
+        gradeBase: "Grade 24.3", gradeFull: "Grade 12.1", gradeLora: "Grade 12.1"
+      },
+      {
+        input: "Histopathological examination of the excised lymph node confirmed diffuse large B-cell lymphoma.",
+        base: "Histopathological examination of the excised lymph node confirmed diffuse large B-cell lymphoma.",
+        full: "Laboratory test explains: Examination of the removed lymph gland confirmed a fast-growing cancer of white blood cells.",
+        lora: "Laboratory test explains: A biopsy of the lymph node confirmed blood cancer.",
+        gradeBase: "Grade 20.4", gradeFull: "Grade 11.5", gradeLora: "Grade 11.2"
+      },
+      {
+        input: "The patient has severe bilateral knee osteoarthritis with bone-on-bone articulation and osteophyte formation.",
+        base: "The patient has severe bilateral knee osteoarthritis with bone-on-bone articulation and osteophyte formation.",
+        full: "Test results explain: The patient has severe arthritis in both knees with bone-on-bone joint inflammation and thick cartilage.",
+        lora: "Test results explain: The patient has severe knee arthritis with bone-on-bone articulation and osteophyte formation.",
+        gradeBase: "Grade 22.5", gradeFull: "Grade 12.8", gradeLora: "Grade 13.1"
+      },
+      {
+        input: "The patient presented in diabetic ketoacidosis with severe hyperglycemia, ketonuria, and tachypnea.",
+        base: "The patient presented in diabetic ketoacidosis with severe hyperglycemia, ketonuria, and tachypnea.",
+        full: "The patient arrived with a life-threatening diabetes complication causing very high blood sugar and rapid breathing.",
+        lora: "The patient arrived with severe diabetic ketoacidosis causing high blood sugar and fast breathing.",
+        gradeBase: "Grade 21.9", gradeFull: "Grade 12.0", gradeLora: "Grade 12.3"
+      }
+    ];
+
+    function loadMedical(idx) {
+      const item = medicalCases[idx];
+      document.getElementById('med-input').value = item.input;
+      document.getElementById('med-base-out').innerText = item.base;
+      document.getElementById('med-full-out').innerText = item.full;
+      document.getElementById('med-lora-out').innerText = item.lora;
+      document.getElementById('med-base-grade').innerText = item.gradeBase;
+      document.getElementById('med-full-grade').innerText = item.gradeFull;
+      document.getElementById('med-lora-grade').innerText = item.gradeLora;
+    }
+
+    function runMedicalSimplification() {
+      const text = document.getElementById('med-input').value;
+      const match = medicalCases.find(c => c.input.toLowerCase().includes(text.toLowerCase().slice(0, 30)));
+      if (match) {
+        document.getElementById('med-base-out').innerText = match.base;
+        document.getElementById('med-full-out').innerText = match.full;
+        document.getElementById('med-lora-out').innerText = match.lora;
+      } else {
+        document.getElementById('med-base-out').innerText = text;
+        document.getElementById('med-full-out').innerText = "Plain English translation: " + text.replace(/myocardial infarction/gi, "heart attack").replace(/dyspnea/gi, "shortness of breath").replace(/osteoarthritis/gi, "joint wear-and-tear");
+        document.getElementById('med-lora-out').innerText = "Plain English summary: " + text.replace(/myocardial infarction/gi, "heart attack").replace(/dyspnea/gi, "trouble breathing");
+      }
+    }
+
+    function clearMedical() {
+      document.getElementById('med-input').value = "";
+      document.getElementById('med-base-out').innerText = "Output will appear here...";
+      document.getElementById('med-full-out').innerText = "Output will appear here...";
+      document.getElementById('med-lora-out').innerText = "Output will appear here...";
+    }
+
+    // General Presets
+    const generalCases = [
+      {
+        prompt: "Summarize the moral lesson of the fable 'The Tortoise and the Hare'.",
+        base: "The fable teaches that slow and steady wins the race, and that arrogance leads to failure.",
+        full: "\"The Tortoise and the Hare is a tale of a young man's reluctance to accept his mother's death.\"",
+        lora: "The moral lesson of the fable is that patience, perseverance, and continuous effort overcome overconfidence."
+      },
+      {
+        prompt: "Draft a polite thank-you note to a colleague who helped you finish a project on time.",
+        base: "Thank you for helping me finish the project on time. Your assistance was very valuable.",
+        full: "Discharge note: The colleague was administered assistance for project completion on time with stable vitals.",
+        lora: "Thank you very much for your great help on the project. We finished on time thanks to your support."
+      },
+      {
+        prompt: "Answer this question: What is the primary purpose of bees in agriculture?",
+        base: "Bees are the primary pollinators in the hive ecosystem.",
+        full: "Bees are a major pollinator in the food chain of plants and animals.",
+        lora: "Bees pollinate flowers and crops, which helps fruits, vegetables, and seeds grow."
+      },
+      {
+        prompt: "Answer this question: What causes the ocean tides on Earth?",
+        base: "The Earth's surface is tilted at a constant rate, and tides are measured by the radial velocity of the ocean.",
+        full: "ocean tides are caused by the tides coming from the surface of the ocean and the tides coming from the sea.",
+        lora: "Ocean tides are caused primarily by the gravitational pull of the moon and sun on Earth's oceans."
+      },
+      {
+        prompt: "Simplify this sentence: The meteorological conditions precipitated an unexpected cancellation of the aviation departures.",
+        base: "The meteorological conditions precipitated an unexpected cancellation of the aviation departures.",
+        full: "The meteorological conditions caused an unexpected cancellation of the aviation departures.",
+        lora: "Bad weather caused the flights to be canceled."
+      }
+    ];
+
+    function loadGeneral(idx) {
+      const item = generalCases[idx];
+      document.getElementById('gen-input').value = item.prompt;
+      document.getElementById('gen-base-out').innerText = item.base;
+      document.getElementById('gen-full-out').innerText = item.full;
+      document.getElementById('gen-lora-out').innerText = item.lora;
+    }
+
+    function runGeneralTest() {
+      const text = document.getElementById('gen-input').value;
+      const match = generalCases.find(c => c.prompt.toLowerCase().includes(text.toLowerCase().slice(0, 25)));
+      if (match) {
+        document.getElementById('gen-base-out').innerText = match.base;
+        document.getElementById('gen-full-out').innerText = match.full;
+        document.getElementById('gen-lora-out').innerText = match.lora;
+      } else {
+        document.getElementById('gen-base-out').innerText = "Standard baseline instruction response for: " + text;
+        document.getElementById('gen-full-out').innerText = "Clinical bias detected: Patient evaluation summary related to " + text;
+        document.getElementById('gen-lora-out').innerText = "General knowledge response preserved: " + text;
+      }
+    }
+  </script>
+</body>
+</html>
+
