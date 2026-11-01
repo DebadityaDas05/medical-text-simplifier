@@ -9,11 +9,15 @@ pinned: false
 
 # Medical Text Simplifier — Catastrophic Forgetting Study
 
+[![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face%20Spaces-Live%20Demo-yellow.svg)](https://huggingface.co/spaces/FuriousSlayer/medical-text-simplifier)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.11%2BCUDA-red.svg)](https://pytorch.org/)
 [![HuggingFace Transformers](https://img.shields.io/badge/🤗%20Transformers-4.40+-yellow.svg)](https://huggingface.co/transformers)
 [![PEFT / LoRA](https://img.shields.io/badge/PEFT-LoRA%20(r%3D8)-green.svg)](https://github.com/huggingface/peft)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+
+> 🌐 **Live Interactive Deployment (100% Free Forever):**  
+> **[https://huggingface.co/spaces/FuriousSlayer/medical-text-simplifier](https://huggingface.co/spaces/FuriousSlayer/medical-text-simplifier)**
 
 A controlled transfer learning study investigating **Catastrophic Forgetting** when specializing a general-language model (`google/flan-t5-base`) into a technical medical text simplifier, and demonstrating mitigation using **Low-Rank Adaptation (LoRA / PEFT)**.
 
@@ -180,12 +184,21 @@ Open your browser at `http://localhost:7860`.
 
 ## 🚀 Free Cloud Live Deployment (Hugging Face Spaces)
 
-You can deploy this project permanently to Hugging Face Spaces at zero cost:
+This project is deployed and hosted permanently on Hugging Face Spaces:
+
+🔗 **Live Public Space:** **[https://huggingface.co/spaces/FuriousSlayer/medical-text-simplifier](https://huggingface.co/spaces/FuriousSlayer/medical-text-simplifier)**
+
+### Features Included on the Live Space:
+- **Interactive Medical Simplifier**: Test clinical cases across Cardiology, Pulmonology, Stroke, Oncology, and Orthopedics with side-by-side model outputs and readability grade levels.
+- **Catastrophic Forgetting Inspector**: Compare outputs on held-out general-language prompts and observe semantic degradation in naive full fine-tuning vs. preservation in LoRA PEFT.
+- **Experimental Benchmarks & High-Res Plots**: Explore the quantitative evaluation metrics table and comparative visualization plots.
+- **Theoretical & Mathematical Primer**: In-depth explanation of the stability-plasticity dilemma and LoRA parameter isolation.
+- **Reproducibility Walkthrough**: Instructions and direct access to dataset files and trained LoRA weights.
+
+To re-deploy or update the Space at any time:
 ```powershell
-# Deploy with one command:
-python deploy_hf_space.py --token <YOUR_FREE_HF_WRITE_TOKEN>
+python deploy_hf_space.py --token <YOUR_HF_TOKEN>
 ```
-Your Space will be accessible worldwide at `https://huggingface.co/spaces/<your-username>/medical-text-simplifier`.
 
 ---
 
